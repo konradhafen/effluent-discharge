@@ -33,7 +33,7 @@ FACILITY_DICT = {'NPDES_ID': 'SourceID',
               'IMPAIRED_OTHER': 'OtherUse'}
 
 EFFLUENT_DICT = {
-    'NDPES_ID': 'SourceId',
+    'NPDES_ID': 'SourceId',
     'OUTFALL': 'PermFeatureNmbr',
     'PARAM': 'ParameterCode',
     'UNIT_DESC': 'DMRUnitDesc',
@@ -120,10 +120,12 @@ def build_effluent_table(df_in, start_date, end_date, npdes_col='NPDES_ID'):
     
     df = pd.DataFrame(columns=list(EFFLUENT_DICT))
     ids = df_sites[npdes_col].values
+    i = 0
     for id in ids:
-        print(id)
+        i += 1
+        print(i, 'of', len(ids), 'NPDES', id)
         effluent_chart = get_effluent_chart(id, start_date, end_date)
-        npdes_id = effluent_chart['Results'][EFFLUENT_DICT['NDPES_ID']]
+        npdes_id = effluent_chart['Results'][EFFLUENT_DICT['NPDES_ID']]
         if len(effluent_chart['Results']['PermFeatures']) > 0:
             outfall = effluent_chart['Results']['PermFeatures'][0][EFFLUENT_DICT['OUTFALL']]
             param = effluent_chart['Results']['PermFeatures'][0]['Parameters'][0][EFFLUENT_DICT['PARAM']]
@@ -131,5 +133,5 @@ def build_effluent_table(df_in, start_date, end_date, npdes_col='NPDES_ID'):
             for effluent_value in effluent_values:
                 effluent_row = build_effluent_row(effluent_value, npdes_id, outfall, param)
                 df.loc[len(df)] = effluent_row
-    
+        
     return df
