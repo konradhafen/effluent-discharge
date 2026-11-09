@@ -1,6 +1,7 @@
 import gis
 import pandas as pd
 import geopandas as gpd
+import numpy as np
 import matplotlib.pyplot as plt
 
 from pathlib import Path
@@ -21,10 +22,5 @@ points_joined = gis.join_points_to_catchments(gdf_sites_points, gdf_catchments_p
 df_npdesid_comid = pd.DataFrame(points_joined[['NPDES_ID', 'FEATUREID']])
 
 effluent_with_comid = pd.merge(df_effluent, df_npdesid_comid, left_on='NPDES_ID', right_on='NPDES_ID', how='left')
-effluent_to_from = pd.merge(effluent_with_comid, df_flow, left_on='FEATUREID', right_on='FROMCOMID', how='outer')
 
-print(df_npdesid_comid.shape, gdf_sites_points.shape)
-print(effluent_with_comid.shape, df_effluent.shape)
-print(effluent_to_from.shape)
-print(df_effluent.head())
-print(effluent_to_from.head())
+# for each date, sum effluent for each comid, join to network definition (df_flow) and accumulate
