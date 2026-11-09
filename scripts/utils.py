@@ -32,7 +32,7 @@ FACILITY_DICT = {'NPDES_ID': 'SourceID',
               'FRS_DESC': 'RefPointDesc',
               'FRS_ACC': 'AccuracyValue', 
               'LAT': 'Latitude83', # SpatialMetadata
-              'LON': 'Latitude83', 
+              'LON': 'Longitude83', 
               'LOC_ACCURACY': 'CalculatedAccuracy', 
               'LOC_REFERENCE': 'ReferencePoint', 
               'DISCHARGE_TO_NAME': 'ICISWaterBodyNames',  # Watersheds -> WBD12s

@@ -20,11 +20,11 @@ def join_points_to_catchments(points, polygons, fn_out=''):
     
     return joined
 
-def csv_to_gpd(fn, lat_n_col, lon_e_col):
+def csv_to_gpd(fn, lat_n_col, lon_e_col, crs):
     df = pd.read_csv(fn)
     gdf = gpd.GeoDataFrame(df,
                            geometry=gpd.points_from_xy(df[lon_e_col], df[lat_n_col]),
-                           crs="EPSG:4326")
+                           crs=crs)
     return gdf
 
 def nhdplusv2_to_gpkg(dirpath, fn_gpkg):
