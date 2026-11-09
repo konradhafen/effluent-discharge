@@ -8,7 +8,7 @@ import utils
 
 def get_huc8_list(huc02):
     huc08 = WaterData("huc08")
-    gdf_huc08 = huc08.byfilter(f"huc8 LIKE '{huc02:02d})%'")
+    gdf_huc08 = huc08.byfilter(f"huc8 LIKE '{huc02:02d}%'")
     huc08_list = gdf_huc08["huc8"].to_list()
     return huc08_list
 
@@ -23,12 +23,12 @@ def build_from_hucs(hucs, start_date, end_date, fn_facilities, fn_values):
         if type(df_fac) is None:
             df_fac = df_fac_temp
         else:
-            df_fac = pd.concat(df_fac, df_fac_temp)
+            df_fac = pd.concat([df_fac, df_fac_temp])
 
         if type(df_val) is None:
             df_val = df_val_temp
         else:
-            df_val = pd.concat(df_val, df_val_temp)
+            df_val = pd.concat([df_val, df_val_temp])
 
     df_fac.to_csv(fn_facilities, index=False)
     df_val.to_csv(fn_values, index=False)

@@ -1,9 +1,14 @@
+import os
 import concurrent.futures
 import requests
 import json
 import pandas as pd
+import geopandas as gpd
 from pathlib import Path
+from pynhd import WaterData
 
+
+os.environ['GDAL_DATA'] = r"C:\Users\vcq32\AppData\Local\miniforge3\Library\share\gdal"
 
 URL_FACILITIES = "https://echodata.epa.gov/echo/cwa_rest_services.get_facility_info?p_maj={}&p_huc={}"
 URL_REPORT = "https://echodata.epa.gov/echo/dfr_rest_services.get_dfr?output=JSON&p_id={}"
@@ -276,3 +281,55 @@ def build_effluent_table(df_in, start_date, end_date, npdes_col='NPDES_ID'):
                 df.loc[len(df)] = effluent_row
         
     return df
+
+def get_nhdmr_flowline_forHUC2(huc2_id, fn):
+    wd_huc8 = WaterData("wbd08")
+    wd_nhd = WaterData("nhdflowline_network")
+
+    huc8s = wd_huc8.byfilter(f"huc8 LIKE '{huc2_id}%'")
+
+    flowline_chunks = []
+
+    for row in huc8s.itertuples(index=False):
+        huc8_geom_bbox = row.geometry.bounds
+        xmin, ymin, xmax, ymax = row.geometry.bounds
+        huc8_id = row.huc8
+
+        try:
+            lines = wd_nhd.bybox((xmin, ymin, xmax, ymax), box_crs=huc8s.crs)
+            # lines = nhd_mr.bygeom(huc8_geom_bbox, geo_crs=huc8s.crs)
+            if not lines.empty:
+                flowline_chunks.append(lines)
+                # print(huc8_id, lines.shape, len(flowline_chunks))
+        except Exception:
+            print(huc8_id, 'EMPTY', len(flowline_chunks))
+            continue
+    
+    if flowline_chunks:
+        all_flowlines = pd.concat(flowline_chunks, ignore_index=True)
+
+        all_flowlines = gpd.GeoDataFrame(all_flowlines, geometry="geometry", crs=flowline_chunks[0].crs)
+        
+        if all_flowlines.crs != huc2.crs:
+            all_flowlines = all_flowlines.to_crs(huc2.crs)
+
+        huc2_flowlines = all_flowlines.clip(huc2.geometry)
+
+        if "nhdplusid" in huc2_flowlines.columns:
+            huc2_flowlines = huc2_flowlines.drop_duplicates(subset=["nhdplusid"])
+        elif "comid" in huc2_flowlines.columns:
+            huc2_flowlines = huc2_flowlines.drop_duplicates(subset=['comid'])
+    else:
+        print('No flowlines fetched')
+
+    huc2_flowlines = huc2_flowlines[~(huc2_flowlines['ftype'] == 'Coastline')]
+    huc2_flowlines.to_file(fn)
+    return
+
+def get_nhdmr_catchments_from_flowlines(fn_in, fn_out, comid_col='comid'):
+    gdf = gpd.read_file(fn_in)
+    wd_catchment = WaterData("catchmentsp")
+    comid_list = gdf[comid_col].unique().tolist()
+    catchments = wd_catchment.byid("featureid", comid_list)
+    catchments.to_file(fn_out)
+    return
