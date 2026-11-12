@@ -20,6 +20,7 @@ fn_out_count = dirpath_effluent / "facility_count_comid.csv"
 fn_out_sum = dirpath_effluent / "effluent_by_comid.csv"
 fn_out_accum = dirpath_effluent / "effluent_accumulated.csv"
 fn_out_accum_mean = dirpath_effluent / "effluent_accumulated_mean.csv"
+fn_out_accum_median = dirpath_effluent / "effluent_accumulated_medin.csv"
 
 gdf_sites_points = gis.csv_to_gpd(fn_sites, 'CWA_LAT', 'CWA_LON', "EPSG:4269")
 gdf_sites_points.to_file(dirpath_effluent / "npdes_sites_4269.gpkg")
@@ -80,6 +81,7 @@ for idx, node in enumerate(ordered_nodes):
         ordered_matrix[downstream_idx] += ordered_matrix[idx]
 
 ordered_matrix_mean = np.mean(ordered_matrix, axis=1, keepdims=True)
+ordered_matrix_median = np.median(ordered_matrix, axis=1, keepdims=True)
 
 accumulated_df = pd.DataFrame(
     ordered_matrix,
@@ -103,3 +105,11 @@ accumulated_df_mean = pd.DataFrame(
 ).loc[df_flow_fix['FROMCOMID']]
 
 accumulated_df_mean.to_csv(fn_out_accum_mean, index_label='COMID')
+
+accumulated_df_median = pd.DataFrame(
+    ordered_matrix_mean,
+    index=ordered_nodes,
+    columns=['median_cfs']
+).loc[df_flow_fix['FROMCOMID']]
+
+accumulated_df_median.to_csv(fn_out_accum_median, index_label='COMID')
