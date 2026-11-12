@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 
+
+MGD_to_CFS = 1.54722865
+
 dirpath_effluent = Path(r"C:\Users\vcq32\OneDrive - Texas State University\Projects\EPA_ECHO_Effluent\data")
 fn_nhd_gpkg = r"C:\Users\vcq32\OneDrive - Texas State University\Data\NHD\NHD\NHDPlusTX\nhdplusv2_12.gpkg"
 fn_sites = dirpath_effluent / "npdes_site_details_12_all.csv"
@@ -33,8 +36,8 @@ effluent_with_comid = pd.merge(df_effluent, df_npdesid_comid, left_on='NPDES_ID'
 
 stat = 'AVG'
 effluent_with_comid['END_DATE'] = pd.to_datetime(effluent_with_comid['END_DATE'], format="%d-%b-%y")
-min_date = effluent_with_comid['END_DATE'].min()
-max_date = effluent_with_comid['END_DATE'].max()
+effluent_with_comid = effluent_with_comid[~(effluent_with_comid['END_DATE'].dt.day == 1)]
+
 
 effluent_to_process = effluent_with_comid[effluent_with_comid['STAT_DESC'] == stat]
 effluent_to_process = effluent_to_process.groupby(['FEATUREID', 'END_DATE'])['VALUE'].sum().reset_index()
@@ -66,7 +69,7 @@ ordered_nodes = list(nx.topological_sort(G))
 
 aligned_df = effluent_for_network.reindex(ordered_nodes, fill_value=0.0).fillna(0.0)
 ordered_matrix=aligned_df.to_numpy(copy=True)
-ordered_matrix = ordered_matrix * 1.54722865  # convert from MGD to CFS
+ordered_matrix = ordered_matrix * MGD_to_CFS  # convert from MGD to CFS
 ordered_matrix_mean = np.mean(ordered_matrix, axis=1, keepdims=True)
 
 node_to_idx = {node: idx for idx, node in enumerate(ordered_nodes)}
@@ -76,6 +79,8 @@ for idx, node in enumerate(ordered_nodes):
         downstream_idx = node_to_idx[downstream_node]
         ordered_matrix[downstream_idx] += ordered_matrix[idx]
 
+ordered_matrix_mean = np.mean(ordered_matrix, axis=1, keepdims=True)
+
 accumulated_df = pd.DataFrame(
     ordered_matrix,
     index=ordered_nodes,
@@ -84,11 +89,12 @@ accumulated_df = pd.DataFrame(
 
 
 accumulated_df.to_csv(fn_out_accum, index_label='COMID')
+print('accumulated max', accumulated_df.max())
 
-for idx, node in enumerate(ordered_nodes):
-    for downstream_node in G.successors(node):
-        downstream_idx = node_to_idx[downstream_node]
-        ordered_matrix_mean[downstream_idx] += ordered_matrix_mean[idx]
+# for idx, node in enumerate(ordered_nodes):
+#     for downstream_node in G.successors(node):
+#         downstream_idx = node_to_idx[downstream_node]
+#         ordered_matrix_mean[downstream_idx] += ordered_matrix_mean[idx]
 
 accumulated_df_mean = pd.DataFrame(
     ordered_matrix_mean,
